@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamZone — Offline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #08090d;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      color: #f7f4ef;
+      padding: 24px;
+    }
+
+    .card {
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: linear-gradient(135deg, rgba(213,255,95,0.2), rgba(82,224,214,0.2));
+      display: grid;
+      place-items: center;
+    }
+
+    .logo-text {
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text span {
+      background: linear-gradient(90deg, #d5ff5f, #52e0d6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .signal-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255,79,109,0.1);
+      border: 1px solid rgba(255,79,109,0.2);
+      display: grid;
+      place-items: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.96); }
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    p {
+      font-size: 0.95rem;
+      color: #a5abb8;
+      line-height: 1.6;
+    }
+
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #d5ff5f, #52e0d6);
+      color: #08090d;
+      font-weight: 800;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+      text-decoration: none;
+    }
+
+    .retry-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+    .retry-btn:active { transform: scale(0.97); }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+
+    .tips {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.82rem;
+      color: #a5abb8;
+    }
+
+    .tip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #d5ff5f;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    footer {
+      font-size: 0.75rem;
+      color: #a5abb8;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d5ff5f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>
+        </svg>
+      </div>
+      <div class="logo-text">Stream<span>Zone</span></div>
+    </div>
+
+    <!-- Signal icon -->
+    <div class="signal-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ff4f6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+        <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+      </svg>
+    </div>
+
+    <h1>You're Offline</h1>
+
+    <p>
+      No internet connection detected. StreamZone needs a live connection to load channels and play streams.
+    </p>
+
+    <button class="retry-btn" onclick="window.location.reload()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      Try Again
+    </button>
+
+    <div class="divider"></div>
+
+    <div class="tips">
+      <div class="tip"><div class="tip-dot"></div><span>Check your Wi-Fi or mobile data connection</span></div>
+      <div class="tip"><div class="tip-dot"></div><span>Live TV streams always require an active internet connection</span></div>
+      <div class="tip"><div class="tip-dot"></div><span>The app UI will load from cache once you reconnect</span></div>
+    </div>
+
+    <footer>StreamZone · Built by Tazminur Rahman Tanim</footer>
+  </div>
+
+  <script>
+    // Auto-retry when connection comes back
+    window.addEventListener("online", () => window.location.reload());
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { TvExperience } from "@/components/tv-experience";
+import { LiveHomepage } from "@/components/live-homepage";
 import { getPlaylist } from "@/lib/playlist";
 
 export const dynamic = "force-dynamic";
@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const channels = await getPlaylist();
 
-  return <TvExperience channels={channels} />;
+  return <LiveHomepage channels={channels} />;
 }

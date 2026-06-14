@@ -1,0 +1,41 @@
+{
+  "name": "StreamZone — Live TV",
+  "short_name": "StreamZone",
+  "description": "Premium live TV streaming — sports, news, entertainment & more. Powered by your M3U playlist.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "categories": ["entertainment", "sports", "news"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Sports",
+      "short_name": "Sports",
+      "description": "Jump straight to Live Sports channels",
+      "url": "/?group=Live+Sports",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "All Channels",
+      "short_name": "Channels",
+      "description": "Browse all available live channels",
+      "url": "/",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "related_applications": []
+}
