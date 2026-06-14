@@ -1,23 +1,17 @@
 "use client";
 
-import Hls from "hls.js";
 import {
-  BadgeCheck,
   Clock3,
   Compass,
-  Expand,
-  Heart,
   History,
   ListVideo,
   Radio,
   Search,
   Signal,
   Sparkles,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Channel } from "@/lib/playlist";
 import Navbar from "@/components/navbar";
 import { TopNavTabs } from "@/components/top-nav-tabs";
@@ -29,15 +23,12 @@ import { HeroCarousel } from "@/components/hero-carousel";
 import { ChannelGrid } from "@/components/channel-grid";
 import { Footer } from "@/components/footer";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { VideoPlayer } from "@/components/video-player";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAX_RECENTS = 12;
-
-const storage = {
-  favorites: "livetv:favorites",
-  recents: "livetv:recents",
-};
+const storage = { favorites: "livetv:favorites", recents: "livetv:recents" };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,27 +47,20 @@ function writeList(key: string, value: string[]) {
 }
 
 function channelInitials(name: string) {
-  const words = name
+  const w = name
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .trim()
     .split(/\s+/)
     .filter(Boolean);
-  if (words.length === 0) return "TV";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  if (!w.length) return "TV";
+  if (w.length === 1) return w[0].slice(0, 2).toUpperCase();
+  return `${w[0][0]}${w[1][0]}`.toUpperCase();
 }
 
 function accentIndex(value: string) {
   let s = 0;
   for (const c of value) s += c.charCodeAt(0);
   return (s % 6) + 1;
-}
-
-function nowLabel() {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date());
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -86,22 +70,13 @@ type LiveHomepageProps = { channels: Channel[] };
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function LiveHomepage({ channels }: LiveHomepageProps) {
-  // refs
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const hlsRef = useRef<Hls | null>(null);
-  const chromeTimerRef = useRef<number | undefined>(undefined);
-
-  // state
+  // state — HLS/video logic lives entirely inside <VideoPlayer>
   const [activeChannelId, setActiveChannelId] = useState(channels[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [activeGroup, setActiveGroup] = useState("All");
   const [view, setView] = useState<"browse" | "guide">("browse");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
-  const [isMuted, setIsMuted] = useState(false);
-  const [playError, setPlayError] = useState("");
-  const [clock, setClock] = useState(nowLabel);
-  const [showChrome, setShowChrome] = useState(true);
   const [playerVisible, setPlayerVisible] = useState(false);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
@@ -156,60 +131,9 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
     setRecents(readList(storage.recents));
   }, []);
 
+  // Track recents when channel changes
   useEffect(() => {
-    const t = window.setInterval(() => setClock(nowLabel()), 30_000);
-    return () => window.clearInterval(t);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (chromeTimerRef.current) window.clearTimeout(chromeTimerRef.current);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    setShowChrome(true);
-    if (chromeTimerRef.current) window.clearTimeout(chromeTimerRef.current);
-    chromeTimerRef.current = window.setTimeout(
-      () => setShowChrome(false),
-      2600,
-    );
-  }, [activeChannelId]);
-
-  useEffect(() => {
-    if (!activeChannel || !videoRef.current) return;
-    const video = videoRef.current;
-    setPlayError("");
-    hlsRef.current?.destroy();
-    hlsRef.current = null;
-    video.pause();
-    video.removeAttribute("src");
-    video.load();
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        lowLatencyMode: true,
-        backBufferLength: 60,
-        enableWorker: true,
-      });
-      hlsRef.current = hls;
-      hls.loadSource(activeChannel.url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () =>
-        video.play().catch(() => undefined),
-      );
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal)
-          setPlayError("Stream unavailable. Try another channel.");
-      });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = activeChannel.url;
-      video.play().catch(() => undefined);
-    } else {
-      setPlayError("Your browser cannot play HLS streams.");
-    }
-
+    if (!activeChannel) return;
     setRecents((cur) => {
       const next = [
         activeChannel.id,
@@ -218,37 +142,19 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
       writeList(storage.recents, next);
       return next;
     });
-
-    return () => {
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
-    };
   }, [activeChannel]);
 
   // ── Actions ───────────────────────────────────────────────────────────────────
 
-  const revealChrome = useCallback(() => {
-    setShowChrome(true);
-    if (chromeTimerRef.current) window.clearTimeout(chromeTimerRef.current);
-    chromeTimerRef.current = window.setTimeout(
-      () => setShowChrome(false),
-      2600,
-    );
+  const selectChannel = useCallback((channel: Channel) => {
+    setActiveChannelId(channel.id);
+    setPlayerVisible(true);
+    setTimeout(() => {
+      document
+        .getElementById("player-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   }, []);
-
-  const selectChannel = useCallback(
-    (channel: Channel) => {
-      setActiveChannelId(channel.id);
-      setPlayerVisible(true);
-      revealChrome();
-      setTimeout(() => {
-        document
-          .getElementById("player-section")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
-    },
-    [revealChrome],
-  );
 
   const toggleFavorite = useCallback((channelId: string) => {
     setFavorites((cur) => {
@@ -258,18 +164,6 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
       writeList(storage.favorites, next);
       return next;
     });
-  }, []);
-
-  const toggleMute = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    const player = document.querySelector(".player-shell");
-    if (player instanceof HTMLElement) player.requestFullscreen?.();
   }, []);
 
   // ── Empty state ───────────────────────────────────────────────────────────────
@@ -318,159 +212,20 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
 
         {/* ── Padded content area ──────────────────────────────────────────── */}
         <div className="mx-auto max-w-[1800px] px-3 py-5 sm:px-5 lg:px-8">
-          {/* ── Live Player ────────────────────────────────────────────────── */}
+          {/* ── Live Player (new VideoPlayer component) ────────────────── */}
           <section
             id="player-section"
-            className={[
-              "mb-6 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1017]",
-              "transition-all duration-500",
-              playerVisible
-                ? "max-h-[1000px] opacity-100"
-                : "max-h-0 opacity-0 pointer-events-none",
-            ].join(" ")}
+            className="mb-6"
             aria-label="Live player"
           >
-            <div className="p-3 sm:p-5">
-              {/* Player top bar */}
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#d5ff5f]">
-                    <Radio size={12} />
-                    Live Now
-                  </span>
-                  <span className="text-[#a5abb8]/40 text-xs hidden sm:inline">
-                    ·
-                  </span>
-                  <span className="text-xs text-[#a5abb8] hidden sm:inline">
-                    {clock}
-                  </span>
-                  <span className="text-[#a5abb8]/40 text-xs hidden sm:inline">
-                    ·
-                  </span>
-                  <span className="text-xs text-[#a5abb8] hidden sm:inline">
-                    {channels.length} channels
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPlayerVisible(false)}
-                  aria-label="Close player"
-                  className="inline-grid h-7 w-7 place-items-center rounded-lg border border-white/10 bg-white/5 text-[#a5abb8] transition-colors hover:border-white/20 hover:text-white"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              {/* Player + info panel */}
-              <div className="player-grid">
-                {/* Video */}
-                <div
-                  className={
-                    showChrome || playError
-                      ? "player-shell is-chrome-visible"
-                      : "player-shell"
-                  }
-                  onClick={revealChrome}
-                  onFocusCapture={revealChrome}
-                  onMouseMove={revealChrome}
-                  onTouchStart={revealChrome}
-                >
-                  <video ref={videoRef} muted={isMuted} controls playsInline />
-                  <div className="ambient ambient-one" />
-                  <div className="ambient ambient-two" />
-                  {playError && (
-                    <div className="player-error">
-                      <Signal size={28} aria-hidden="true" />
-                      <span>{playError}</span>
-                    </div>
-                  )}
-                  <div className="player-overlay">
-                    <div>
-                      <span className="eyebrow">
-                        <Radio size={13} aria-hidden="true" />
-                        Live now
-                      </span>
-                      <h1>{activeChannel.name}</h1>
-                      <p>
-                        Ch {activeChannel.number.toString().padStart(3, "0")} ·{" "}
-                        {activeChannel.group} · {activeChannel.quality}
-                      </p>
-                    </div>
-                    <div className="player-actions">
-                      <button
-                        type="button"
-                        className={
-                          favoriteSet.has(activeChannel.id)
-                            ? "icon-button is-active"
-                            : "icon-button"
-                        }
-                        onClick={() => toggleFavorite(activeChannel.id)}
-                        aria-label="Toggle favorite"
-                      >
-                        <Heart
-                          size={18}
-                          fill="currentColor"
-                          aria-hidden="true"
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-button"
-                        onClick={toggleMute}
-                        aria-label={isMuted ? "Unmute" : "Mute"}
-                      >
-                        {isMuted ? (
-                          <VolumeX size={18} aria-hidden="true" />
-                        ) : (
-                          <Volume2 size={18} aria-hidden="true" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-button"
-                        onClick={toggleFullscreen}
-                        aria-label="Fullscreen"
-                      >
-                        <Expand size={18} aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Channel info panel */}
-                <aside className="now-panel" aria-label="Channel info">
-                  <div
-                    className={`channel-mark accent-${accentIndex(activeChannel.name)}`}
-                  >
-                    {activeChannel.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={activeChannel.logo} alt="" />
-                    ) : (
-                      <span>{channelInitials(activeChannel.name)}</span>
-                    )}
-                  </div>
-                  <span className="eyebrow">
-                    <BadgeCheck size={13} aria-hidden="true" />
-                    Signal source
-                  </span>
-                  <h2>{activeChannel.name}</h2>
-                  <dl>
-                    <div>
-                      <dt>Group</dt>
-                      <dd>{activeChannel.group}</dd>
-                    </div>
-                    <div>
-                      <dt>Region</dt>
-                      <dd>{activeChannel.country ?? "Global"}</dd>
-                    </div>
-                    <div>
-                      <dt>Host</dt>
-                      <dd>{activeChannel.host}</dd>
-                    </div>
-                  </dl>
-                </aside>
-              </div>
-            </div>
+            {playerVisible && activeChannel && (
+              <VideoPlayer
+                channel={activeChannel}
+                isFavorite={favoriteSet.has(activeChannel.id)}
+                onToggleFavorite={() => toggleFavorite(activeChannel.id)}
+                onClose={() => setPlayerVisible(false)}
+              />
+            )}
           </section>
 
           {/* ── Channel Browser ─────────────────────────────────────────────── */}
