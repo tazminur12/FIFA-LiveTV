@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "ANALYZE=true next build",
+    "test:streams": "node scripts/test-streams.js",
+    "generate:cleaned-m3u": "node scripts/generate-cleaned-m3u.js",
+    "cleanup:streams": "npm run test:streams && npm run generate:cleaned-m3u"
   },
   "dependencies": {
     "hls.js": "^1.5.18",

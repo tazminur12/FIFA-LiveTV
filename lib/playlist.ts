@@ -17,7 +17,8 @@ export type Channel = {
 
 // ── Sources ───────────────────────────────────────────────────────────────────
 
-const LOCAL_PLAYLIST = "Fifa world cup.m3u";
+// Use cleaned M3U with working channels only
+const LOCAL_PLAYLIST = "Fifa world cup - WITH-LOGOS.m3u";
 
 // Bangladesh channels from iptv-org (always fresh)
 const BD_PLAYLIST_URL = "https://iptv-org.github.io/iptv/countries/bd.m3u";
@@ -97,6 +98,35 @@ function normalizeBdGroup(raw: string): string {
   // Handle composite groups like "Entertainment;Music"
   const first = raw.split(";")[0].trim();
   return BD_GROUP_MAP[first] ?? "🇧🇩 General";
+}
+
+// ── Channel logo matcher ──────────────────────────────────────────────────────
+
+const CHANNEL_LOGO_MAP: Record<string, string> = {
+  // Major Sports Networks
+  ESPN: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/ESPN_logo.svg/512px-ESPN_logo.svg.png",
+  "TNT Sports": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/TNT_Sports_logo.svg/512px-TNT_Sports_logo.svg.png",
+  TyC: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/TyC_Sports_logo.svg/512px-TyC_Sports_logo.svg.png",
+  "Win Sports": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Win_Sports%2B.svg/512px-Win_Sports%2B.svg.png",
+  DAZN: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/DAZN_logo.svg/512px-DAZN_logo.svg.png",
+  beIN: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/BeIN_Sports_logo.svg/512px-BeIN_Sports_logo.svg.png",
+  "Real Madrid": "https://upload.wikimedia.org/wikipedia/en/thumb/6/6e/Real_Madrid_CF.svg/512px-Real_Madrid_CF.svg.png",
+  "Fox Sports": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Fox_Sports_logo.svg/512px-Fox_Sports_logo.svg.png",
+  TUDN: "https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/TUDN_logo.png/512px-TUDN_logo.png",
+  "Red Bull": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Red_Bull_logo.svg/512px-Red_Bull_logo.svg.png",
+  Telemundo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Telemundo_logo.svg/512px-Telemundo_logo.svg.png",
+  Claro: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Claro_%28company%29_logo.svg/512px-Claro_%28company%29_logo.svg.png",
+  Azteca: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Azteca_7.png/512px-Azteca_7.png",
+};
+
+function getAutoLogo(channelName: string): string | undefined {
+  // Try to match channel name with known logos
+  for (const [key, logoUrl] of Object.entries(CHANNEL_LOGO_MAP)) {
+    if (channelName.toLowerCase().includes(key.toLowerCase())) {
+      return logoUrl;
+    }
+  }
+  return undefined;
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -196,7 +226,7 @@ function parseM3U(text: string, startIndex: number, isBd: boolean): Channel[] {
       group,
       country: inferCountry(name, isBd),
       quality: inferQuality(name, url),
-      logo: attrs["tvg-logo"] || undefined,
+      logo: attrs["tvg-logo"] || getAutoLogo(name),
       host: parsedUrl.hostname.replace(/^www\./, ""),
     });
 
