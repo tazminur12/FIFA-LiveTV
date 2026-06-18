@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Channel } from "@/lib/playlist";
+import { FIFA_WORLD_CUP_GROUP } from "@/lib/constants";
 import Navbar from "@/components/navbar";
 import { TopNavTabs } from "@/components/top-nav-tabs";
 import {
@@ -91,10 +92,16 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
       acc[ch.group] = (acc[ch.group] ?? 0) + 1;
       return acc;
     }, {});
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const fifaEntry = sorted.find(([group]) => group === FIFA_WORLD_CUP_GROUP);
+    const rest = sorted.filter(([group]) => group !== FIFA_WORLD_CUP_GROUP);
+
     return [
       ["All", channels.length],
       ["Favorites", favorites.length],
-      ...Object.entries(counts).sort((a, b) => b[1] - a[1]),
+      ...(fifaEntry ? [fifaEntry] : []),
+      ...rest,
     ];
   }, [channels, favorites.length]);
 
@@ -200,12 +207,25 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
       <main className="w-full">
         {/* ── Hero Carousel ────────────────────────────────────────────────── */}
         <HeroCarousel
-          onWatchNow={() => {
-            setPlayerVisible(true);
+          onWatchNow={(itemId) => {
+            if (itemId === "fifa-world-cup") {
+              setActiveGroup(FIFA_WORLD_CUP_GROUP);
+              setQuery("");
+              const firstFifa = channels.find(
+                (ch) => ch.group === FIFA_WORLD_CUP_GROUP,
+              );
+              if (firstFifa) {
+                setActiveChannelId(firstFifa.id);
+                setPlayerVisible(true);
+              }
+            }
+
             setTimeout(() => {
-              document
-                .getElementById("player-section")
-                ?.scrollIntoView({ behavior: "smooth" });
+              const target =
+                itemId === "fifa-world-cup"
+                  ? document.getElementById("channel-browser")
+                  : document.getElementById("player-section");
+              target?.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 80);
           }}
         />
@@ -230,6 +250,7 @@ export function LiveHomepage({ channels }: LiveHomepageProps) {
 
           {/* ── Channel Browser ─────────────────────────────────────────────── */}
           <section
+            id="channel-browser"
             className="control-surface !rounded-2xl"
             aria-label="Channel browser"
           >

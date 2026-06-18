@@ -42,6 +42,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   USA: Flag,
   Latino: Globe2,
   "Eastern Europe": Globe2,
+  "FIFA World Cup 2026": Trophy,
+  "Football World Cup 2026": Trophy,
   "🇧🇩 General": Tv,
   "🇧🇩 News": Newspaper,
   "🇧🇩 Entertainment": Star,

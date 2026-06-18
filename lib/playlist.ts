@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { FIFA_WORLD_CUP_GROUP } from "@/lib/constants";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,11 +18,9 @@ export type Channel = {
 
 // ── Sources ───────────────────────────────────────────────────────────────────
 
-// Use cleaned M3U with working channels only
-const LOCAL_PLAYLIST = "Fifa world cup - WITH-LOGOS.m3u";
+const LOCAL_PLAYLIST = "football.m3u";
 
-// Bangladesh channels from iptv-org (always fresh)
-const BD_PLAYLIST_URL = "https://iptv-org.github.io/iptv/countries/bd.m3u";
+// Bangladesh channels from iptv-org (optional — football.m3u is the primary source)
 
 // ── Country map ───────────────────────────────────────────────────────────────
 
@@ -169,10 +168,36 @@ function inferCountry(name: string, isBd = false) {
   return undefined;
 }
 
+function normalizeGroup(raw: string) {
+  if (/football world cup 2026|fifa world cup 2026/i.test(raw)) {
+    return FIFA_WORLD_CUP_GROUP;
+  }
+  return raw.trim();
+}
+
 function inferGroup(name: string, groupTitle?: string) {
-  if (groupTitle?.trim()) return groupTitle.trim();
+  if (groupTitle?.trim()) return normalizeGroup(groupTitle);
   const match = groupPatterns.find(([p]) => p.test(name));
   return match?.[1] ?? "Live Sports";
+}
+
+function disambiguateNames(channels: Channel[]): Channel[] {
+  const totals = channels.reduce<Record<string, number>>((acc, ch) => {
+    const key = `${ch.group}::${ch.name}`;
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const seen = new Map<string, number>();
+
+  return channels.map((channel) => {
+    const key = `${channel.group}::${channel.name}`;
+    if ((totals[key] ?? 0) <= 1) return channel;
+
+    const index = (seen.get(key) ?? 0) + 1;
+    seen.set(key, index);
+    return { ...channel, name: `${channel.name} #${index}` };
+  });
 }
 
 function inferQuality(name: string, url: string) {
@@ -239,14 +264,8 @@ function parseM3U(text: string, startIndex: number, isBd: boolean): Channel[] {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function getPlaylist(): Promise<Channel[]> {
-  // 1️⃣ Load local playlist
   const localChannels = await loadLocal();
-
-  // 2️⃣ Fetch Bangladesh channels (with timeout + graceful fallback)
-  const bdChannels = await loadBangladesh(localChannels.length);
-
-  // 3️⃣ Bangladesh channels first (home channels 🇧🇩), then local
-  return [...bdChannels, ...localChannels];
+  return disambiguateNames(localChannels);
 }
 
 async function loadLocal(): Promise<Channel[]> {
@@ -255,27 +274,6 @@ async function loadLocal(): Promise<Channel[]> {
     const text = await fs.readFile(filePath, "utf8");
     return parseM3U(text, 0, false);
   } catch {
-    return [];
-  }
-}
-
-async function loadBangladesh(offset: number): Promise<Channel[]> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout
-
-    const res = await fetch(BD_PLAYLIST_URL, {
-      signal: controller.signal,
-      next: { revalidate: 3600 }, // cache 1 hour — fresh enough for live TV
-    });
-
-    clearTimeout(timer);
-
-    if (!res.ok) return [];
-    const text = await res.text();
-    return parseM3U(text, offset, true);
-  } catch {
-    // Network error or timeout — silently skip BD channels
     return [];
   }
 }
